@@ -1,7 +1,11 @@
 pull : git pull origin master
 
 push :
-»óÅÂ È®ÀÎ: git status
-¸ğµç ÆÄÀÏ Æ®·¢Å·: git add .
-Ä¿¹Ô ´Ş±â: git commit -m "massage"
-±êÇãºê¿¡ µ¿±âÈ­: git push origin +master
+ìƒíƒœ í™•ì¸: git status
+ëª¨ë“  íŒŒì¼ íŠ¸ë™í‚¹: git add .
+ì»¤ë°‹ ë‹¬ê¸°: git commit -m "massage"
+
+ì´ê±´ ê¹ƒí—ˆë¸Œ í™ˆí”¼ì—ì„œ ë‹¨ê±°ì•¼
+ìœ„ì— ìˆë˜ê±° ì•„ë˜ì— ë‹¨ê±°ì•¼
+
+ê¹ƒí—ˆë¸Œì— ë™ê¸°í™”: git push origin +master
