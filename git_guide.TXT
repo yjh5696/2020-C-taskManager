@@ -1,11 +1,8 @@
-pull : git pull origin master
+﻿pull : 
+깃허브에서 변경한걸로 가져오는거: git pull origin master
 
 push :
 상태 확인: git status
 모든 파일 트랙킹: git add .
 커밋 달기: git commit -m "massage"
-
-이건 깃허브 홈피에서 단거야
-위에 있던거 아래에 단거야
-
 깃허브에 동기화: git push origin +master
