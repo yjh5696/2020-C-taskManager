@@ -1,0 +1,7 @@
+pull : git pull origin master
+
+push :
+상태 확인: git status
+모든 파일 트랙킹: git add .
+커밋 달기: git commit -m "massage"
+깃허브에 동기화: git push origin +master
