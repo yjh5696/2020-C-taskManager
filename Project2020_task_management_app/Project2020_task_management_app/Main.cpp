@@ -295,67 +295,59 @@ protected:
     int nyear;//현재 년도
     int total_day;//1년부터 현재 년도까지의 총 일 수
     int first_date;//첫번째 주의 공백 개수
-    bool is_leap_year(int year);//윤년인지 확인
+	
+    bool is_leap_year(int year){ //윤년인지 확인
+    	if (year % 4 == 0 && year % 100 != 0 || year % 400 == 0) {
+        	day[1] = 29;
+        	return true;
+    	}
+    	day[1] = 28;
+    	return false;
+    }
 public:
     int date[5][7];//달력 배열
-    MonthTable();
-    void calc_day();//first_date, total_day를 계산
-    void make_Cal();//계산 후 달력 배열에 저장
+    MonthTable()
+    {
+    	nday = pLocal->tm_mday; 
+    	nmonth = pLocal->tm_mon + 1; 
+    	nyear = pLocal->tm_year + 1900; 
+    	total_day = 0;
+    	first_date = 0;
+    }
+    void calc_day()//total_day, first_date 계산
+    {
+	total_day = (nyear - 1) * 365 + (nyear - 1) / 4 - (nyear - 1) / 100 + (nyear - 1) / 400;
+    	for (int i = 0; i < nmonth - 1; i++) {
+        	if (i == 1) is_leap_year(nyear);
+    		total_day += day[i];
+    	}
+    	first_date = total_day % 7;
+    }
+    void make_Cal()
+    {
+	int count = 0;
+    	int c = 0;
+
+    	calc_day();
+
+    	for (int i = 0; i <= first_date; i++)
+    	{
+        	date[c][count] = 0;
+        	count++;
+    	}
+    	for (int i = 1; i <= day[nmonth - 1]; i++)
+    	{
+        	if (count >= 7)
+        	{
+            	cout << endl;
+            	count = 0;
+            	c++;
+        	}
+        	date[c][count] = i;
+        	count++;
+    	}    
+    }
 };
-
-MonthTable::MonthTable()
-{
-    nday = pLocal->tm_mday; 
-    nmonth = pLocal->tm_mon + 1; 
-    nyear = pLocal->tm_year + 1900; 
-    total_day = 0;
-    first_date = 0;
-}
-
-bool MonthTable::is_leap_year(int year)
-{
-    if (year % 4 == 0 && year % 100 != 0 || year % 400 == 0) {
-        day[1] = 29;
-        return true;
-    }
-    day[1] = 28;
-    return false;
-}
-
-void MonthTable::calc_day() {
-    total_day = (nyear - 1) * 365 + (nyear - 1) / 4 - (nyear - 1) / 100 + (nyear - 1) / 400;
-    for (int i = 0; i < nmonth - 1; i++) {
-        if (i == 1) is_leap_year(nyear);
-        total_day += day[i];
-    }
-    first_date = total_day % 7;
-}
-
-void MonthTable::make_Cal()
-{
-    int count = 0;
-    int c = 0;
-
-    calc_day();
-
-    for (int i = 0; i <= first_date; i++)
-    {
-        date[c][count] = 0;
-        count++;
-    }
-    for (int i = 1; i <= day[nmonth - 1]; i++)
-    {
-        if (count >= 7)
-        {
-            cout << endl;
-            count = 0;
-            c++;
-        }
-        date[c][count] = i;
-        count++;
-    }
-}
-
 
 class Stack {
 private:
