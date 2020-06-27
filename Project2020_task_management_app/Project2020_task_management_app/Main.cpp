@@ -8,7 +8,6 @@
 #include <windows.h>
 #include <time.h>
 #include <vector>
-#include <algorithm>
 using namespace std;
 
 // 전처리 -----------------------------------------------------------------
