@@ -664,6 +664,80 @@ int main(int argc, char** argv) {
 }
 */
 
+time_t curTime = time(NULL);
+struct tm* pLocal = localtime(&curTime);
+
+int date[5][7]; //이거 쓰면 나옴
+
+class Calendar {
+protected:
+    int day[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    int nday;
+    int nmonth;
+    int nyear;
+    int start_day;
+    int total_day;
+    int first_date;
+    bool is_leap_year(int year);
+public:
+    Calendar();
+    void calc_day();
+    void make_Cal();
+    void textcolor(int foreground, int background);
+};
+
+Calendar::Calendar() 
+{
+    nday = pLocal->tm_mday; //현재 일
+    nmonth = pLocal->tm_mon + 1; //현재 월
+    nyear = pLocal->tm_year + 1900; //현재 년도
+    total_day = 0;
+    first_date = 0;
+}
+
+bool Calendar::is_leap_year(int year) 
+{
+    if (year % 4 == 0 && year % 100 != 0 || year % 400 == 0) {
+        day[1] = 29;
+        return true;
+    }
+    day[1] = 28;
+    return false;
+}
+
+void Calendar::calc_day() {
+    total_day = (nyear - 1) * 365 + (nyear - 1) / 4 - (nyear - 1) / 100 + (nyear - 1) / 400;
+    for (int i = 0; i < nmonth - 1; i++) {
+        if (i == 1) is_leap_year(nyear);
+        total_day += day[i];
+    }
+    first_date = total_day % 7;
+}
+
+void Calendar::make_Cal() 
+{
+    int count = 0;
+    int c = 0;
+
+    calc_day();
+
+    for (int i = 0; i <= first_date; i++)
+    {
+        date[c][count] = 0;
+        count++;
+    }
+    for (int i = 1; i <= day[nmonth - 1]; i++)
+    {
+        if (count >= 7)
+        {
+            count = 0;
+            c++;
+        }
+        date[c][count] = i;
+        count++;
+    }
+}
+
 // 전역 변수 --------------------------------------------------------------
 typedef pair<int, int> pii;
 pii curSelect = { 0, 0 };
