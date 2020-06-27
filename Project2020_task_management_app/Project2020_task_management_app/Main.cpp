@@ -339,9 +339,9 @@ public:
     	{
         	if (count >= 7)
         	{
-            	cout << endl;
-            	count = 0;
-            	c++;
+            		cout << endl;
+            		count = 0;
+            		c++;
         	}
         	date[c][count] = i;
         	count++;
