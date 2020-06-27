@@ -1,0 +1,9 @@
+﻿  Main.cpp
+C:\Users\kritias\Desktop\현재프로젝트\일정관리프로그램\Project2020_task_management_app\Project2020_task_management_app\Main.cpp(727,16): warning C4838:  'int'에서 'SHORT'(으)로의 변환에는 축소 변환이 필요합니다.
+C:\Users\kritias\Desktop\현재프로젝트\일정관리프로그램\Project2020_task_management_app\Project2020_task_management_app\Main.cpp(727,19): warning C4838:  'int'에서 'SHORT'(으)로의 변환에는 축소 변환이 필요합니다.
+C:\Users\kritias\Desktop\현재프로젝트\일정관리프로그램\Project2020_task_management_app\Project2020_task_management_app\Main.cpp(733,18): warning C4838:  'int'에서 'SHORT'(으)로의 변환에는 축소 변환이 필요합니다.
+C:\Users\kritias\Desktop\현재프로젝트\일정관리프로그램\Project2020_task_management_app\Project2020_task_management_app\Main.cpp(733,22): warning C4838:  'int'에서 'SHORT'(으)로의 변환에는 축소 변환이 필요합니다.
+C:\Users\kritias\Desktop\현재프로젝트\일정관리프로그램\Project2020_task_management_app\Project2020_task_management_app\Main.cpp(739,16): warning C4838:  'int'에서 'SHORT'(으)로의 변환에는 축소 변환이 필요합니다.
+C:\Users\kritias\Desktop\현재프로젝트\일정관리프로그램\Project2020_task_management_app\Project2020_task_management_app\Main.cpp(739,18): warning C4838:  'int'에서 'SHORT'(으)로의 변환에는 축소 변환이 필요합니다.
+C:\Users\kritias\Desktop\현재프로젝트\일정관리프로그램\Project2020_task_management_app\Project2020_task_management_app\Main.cpp(741,9): warning C4477:  'printf' : 서식 문자열 '%s'에 'char *' 형식의 인수가 필요하지만 variadic 인수 1의 형식이 'std::string'입니다.
+  Project2020_task_management_app.vcxproj -> C:\Users\kritias\Desktop\현재프로젝트\일정관리프로그램\Project2020_task_management_app\Debug\Project2020_task_management_app.exe
