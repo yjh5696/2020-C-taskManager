@@ -108,6 +108,10 @@ public:
 		return to_string(this->deadline.month) + "/" + to_string(this->deadline.day);
 	}
 
+	int get_deadline_weight() {
+		return deadline.month * 100 + deadline.day;
+	}
+
 	bool set_deadline(date _deadline) {
 		this->deadline = _deadline;
 		return true;
@@ -123,6 +127,27 @@ private:
 	string name;
 	Task* rootTask;
 	VisualMode visualMode;
+
+	bool compare_task(Task* a, Task* b) {
+		return a->get_deadline_weight() < b->get_deadline_weight();
+	}
+
+	Task* change_task(Task* a, Task* b) {
+		if(a->prev != NULL) {
+			a->prev->next = b;
+		}
+		if (b->next != NULL) {
+			b->next->prev = a;
+		}
+		
+		b->prev == a->prev;
+		a->next = b->next;
+		
+		b->next = a;
+		a->prev = b;
+
+		return a;
+	}
 public:
 	Group* prev;
 	Group* next;
@@ -153,15 +178,56 @@ public:
 		index = _index;
 	}
 
+	int get_index() {
+
+	}
+
 	void add(string data, date deadline) {
 		Task* newTask = new Task(data, deadline);
 		Task* iterPos = rootTask;
 		taskSize++;
-		while (iterPos->next != NULL) {
+		if (iterPos == NULL) {
+			rootTask = newTask;
+		}
+		else  {
+			while (iterPos->next != NULL) {
+				iterPos = iterPos->next;
+			}
+			iterPos->next = newTask;
+			newTask->prev = iterPos;
+		}
+		return;
+	}
+
+	void remove(Task* tmp) {
+		if (tmp == NULL) {
+			return;
+		}
+
+		if (tmp->prev != NULL) {
+			tmp->prev->next = tmp->next;
+		}
+		else {
+			rootTask = tmp->next;
+		}
+
+		if (tmp->next != NULL) {
+			tmp->next->prev = tmp->prev;
+		}
+
+		taskSize--;
+		delete(tmp);
+	}
+
+	Task* get_task_by_index(int index) {
+		Task* iterPos = rootTask;
+		for (int i = 0; i < index; i++) {
+			if (iterPos == NULL) {
+				return rootTask;
+			}
 			iterPos = iterPos->next;
 		}
-		iterPos->next = newTask;
-		return;
+		return iterPos;
 	}
 
 	void get_task_text(vector<string>* taskTexts) {
@@ -173,6 +239,20 @@ public:
 			iterPos = iterPos->next;
 		}
 		return;
+	}
+
+	void sort_task() {
+		for (int i = taskSize - 1; i > 0; i--) {
+			int taskIndex = 0;
+			for (Task* iterPos = rootTask; taskIndex < i; taskIndex++, iterPos = iterPos->next) {
+				if (!compare_task(iterPos, iterPos->next)) {
+					if (rootTask == iterPos) {
+						rootTask = iterPos->next;
+					}
+					change_task(iterPos, iterPos->next);
+				}
+			}
+		}
 	}
 };
 
@@ -254,15 +334,23 @@ public:
 		if (departure == destination || departure >= size || destination >= size) {
 			return;
 		}
-		Group* before = get_group_by_index(departure);
-		Group* after = get_group_by_index(destination);
-		before->prev->next = before->next;
-		before->next->prev = before->prev;
+		Group* a = get_group_by_index(departure);
+		Group* b = get_group_by_index(destination);
 
-		before->next = after->next;
-		before->prev = after;
+		if (a->next != NULL) {
+			a->next->prev = b;
+		}
+		if (b->next != NULL) {
+			b->next->prev = a;
+		}
 
-		after->next = before;
+		if (a->prev != NULL) {
+			a->prev->next = b;
+		}
+		if (b->prev != NULL) {
+			b->prev->next = a;
+		}
+
 		return;
 	}
 
@@ -271,15 +359,29 @@ public:
 		if (tmp == NULL) {
 			return;
 		}
-		tmp->prev->next = tmp->next;
-		tmp->next->prev = tmp->prev;
+
+		if (tmp->prev != NULL) {
+			tmp->prev->next = tmp->next;
+		}
+		else {
+			head = tmp->next;
+		}
+
+		if (tmp->next != NULL) {
+			tmp->next->prev = tmp->prev;
+		}
+		else {
+			tail = tmp->prev;
+		}
 
 		index--;
-		while (tmp != NULL) {
-			tmp->set_index(index++);
-			tmp = tmp->next;
-		}
+		size--;
+		Group* iterPos = tmp->next;
 		delete(tmp);
+		while (iterPos != NULL) {
+			iterPos->set_index(index++);
+			iterPos = iterPos->next;
+		}
 	}
 
 	void tour() {
@@ -788,8 +890,8 @@ void set_group_property(int idenfier);
 
 void try_initialize();
 
-void group_management_paint(pii start, pii volume, pii gap, vector<string> info);
-void group_management_paint_dynamic_list(pii start, pii volume, string text);
+void management_paint(pii start, pii volume, pii gap, int type, vector<string> info);
+void management_paint_dynamic_list(pii start, pii volume, string text);
 
 int(*scene[8])(void) = { log_in, home, calendar, group_task, group_management, FTM, merge_user, setting};
 
@@ -930,6 +1032,17 @@ int home(void) {
 
 void timePrint(void) {
 	struct tm* curTime;
+	MonthTable mt;
+	mt.make_Cal();
+	gotoxy(4, 4);
+	printf("일 월 화 수 목 금 토");
+	for (int i = 0; i < 5; i++) {
+		gotoxy(4, 5 + i);
+		for (int j = 0; j < 7; j++) {
+			if (mt.date[i][j] != 0) printf("%2d ", mt.date[i][j]);
+			else printf("   ");
+		}
+	}
 	while (!isEnd) {
 		time_t curT = time(&trashTime);
 		curTime = localtime(&curT);
@@ -1134,9 +1247,10 @@ int group_management(void) {
 	int selected = -1;
 	curSelect = { 0,0 };
 	do {
+		// 그룹 모두 삭제할 때 호출되는 부분 -> 에러의 원인
 		user.myGroups.get_group_text(&groupTexts);
 		limit = groupTexts.size();
-		group_management_paint({ 4, 2 }, { 74, 3 }, { 42, 3 }, groupTexts);
+		management_paint({ 4, 2 }, { 74, 3 }, { 42, 3 }, 0, groupTexts);
 		cursor_Draw(curSelect.first + (curSelect.second * 9), 0, 2, 1);
 		direction = input(10, 2, 0);
 		cursor_Draw(curSelect.first + (curSelect.second * 9), (curSelect.first + (curSelect.second * 9) + 1) < limit ? '@' : (curSelect.first + (curSelect.second * 9) + 49), 2, 0);
@@ -1144,7 +1258,7 @@ int group_management(void) {
 
 	switch (direction) {
 		case 'D': case 'd':
-			selected = 0;
+			selected = 1;
 			bufferIndex = curSelect.first + curSelect.second * 9;
 			break;
 		case 'T': case 't':
@@ -1201,8 +1315,16 @@ int group_management(void) {
 			break;
 		case ENTER:
 			if (selected != -1 && bufferIndex != curSelect.first + curSelect.second * 8) {
-				// 위치 변경이나 병합 처리
+				switch (selected) {
+				case 1: // 위치변경
+					user.myGroups.insert(bufferIndex, curSelect.first + (curSelect.second * 9));
+					break;
+				case 2: // 병합처리
+					break;
+				}
 			}
+			bufferIndex = -1;
+			selected = -1;
 			break;
 		}
 	} while (true);
@@ -1216,29 +1338,72 @@ void current_group_task(int identifier) {
 
 	Group* group = user.myGroups.get_group_by_index(identifier);
 	vector<string> taskTexts;
+	Task* curTask;
 	int limit;
 	int direction = 0;
 	curSelect = { 0,0 };
 	do {
+		// 태스크 모두 삭제될 때 호출되는 부분 -> 에러의 원인
 		group->get_task_text(&taskTexts);
 		limit = taskTexts.size();
-		group_management_paint({ 4, 2 }, { 74, 3 }, { 42, 3 }, taskTexts);
+		management_paint({ 4, 2 }, { 74, 3 }, { 42, 3 }, 1, taskTexts);
 		cursor_Draw(curSelect.first + (curSelect.second * 9), 0, 2, 1);
 		direction = input(10, 2, 0);
-		cursor_Draw(curSelect.first + (curSelect.second * 9), (curSelect.first + (curSelect.second * 9) + 1) < limit ? '@' : (curSelect.first + (curSelect.second * 9) + 49), 2, 0);
+		cursor_Draw(curSelect.first + (curSelect.second * 9), 0, 2, 0);
 		Sleep(5);
+
+		curTask = group->get_task_by_index(curSelect.first + (curSelect.second * 9));
 
 		switch (direction) {
 		case 'A': case 'a': // add
+			if (limit < 18) {
+				char newDateString[2][3] = { "00", "00" };
+				char newTaskName[23] = "                      ";
+
+				gotoxy(10 + (limit / 9) * 42, 3 + (limit % 9) * 3);
+				printf("                           ");
+
+				textOperator(2, newDateString[0], { 10 + (limit / 9) * 42  , 3 + (limit % 9) * 3 }, false);
+				textOperator(2, newDateString[1], { 13 + (limit / 9) * 42  , 3 + (limit % 9) * 3 }, false);
+				date newDeadline = { atoi(newDateString[0]), atoi(newDateString[1]) };
+				textOperator(23, newTaskName, { 16 + (limit / 9) * 42  , 3 + (limit % 9) * 3 }, false);
+
+				group->add(newTaskName, newDeadline);
+				group->sort_task();
+			}
 			break;
 		case 'M': case 'm': // modify
 			if (limit < 18) {
+				char newDateString[2][3] = { "00", "00" };
+
+				gotoxy(10 + (limit / 9) * 42, 3 + (limit % 9) * 3);
+				printf("                           ");
+
+				textOperator(2, newDateString[0], { 10 + (limit / 9) * 42  , 3 + (limit % 9) * 3 }, false);
+				textOperator(2, newDateString[1], { 13 + (limit / 9) * 42  , 3 + (limit % 9) * 3 }, false);
+				date newDeadline = { atoi(newDateString[0]), atoi(newDateString[1]) };
 				char newTaskName[23] = "                      ";
-				textOperator(23, newTaskName, { 10 + (limit / 9) * 42  , 3 + (limit % 9) * 3 }, false);
-				user.myGroups.add(newTaskName, 0);
+				textOperator(23, newTaskName, { 16 + (limit / 9) * 42  , 3 + (limit % 9) * 3 }, false);
+
+				curTask->set_deadline(newDeadline);
+				curTask->set_name(newTaskName);
+				group->sort_task();
 			}
 			break;
 		case 'D': case 'd': //delete
+			group->remove(curTask);
+			gotoxy(0, 0);
+			design_current_group_task();
+
+			if (curSelect.first + (curSelect.second * 9)) {
+				if (curSelect.first == 0 && curSelect.second == 1) {
+					curSelect.second--;
+					curSelect.first = 8;
+				}
+				else {
+					curSelect.first--;
+				}
+			}
 			break;
 		case 'I': case 'i':
 			user.myGroups.remove(identifier);
@@ -1326,23 +1491,30 @@ void cursor_Draw(int x, int y, int sceneIndex, bool mode) {
 
 }
 
-void group_management_paint(pii start, pii volume, pii gap, vector<string> info) {
+void management_paint(pii start, pii volume, pii gap, int type, vector<string> info) {
 	int size = info.size();
 	int x, y;
 	for (int i = 0; i <= size; i++) {
 		x = start.first + (gap.first * (i / 9));
 		y = start.second + (gap.second * (i % 9));
 		if (i == size) {
-			group_management_paint_dynamic_list({ x, y }, volume, "@ Press T -> new group");
+			switch (type) {
+			case 0:
+				management_paint_dynamic_list({ x, y }, volume, "@ Press T -> new group");
+				break;
+			case 1:
+				management_paint_dynamic_list({ x, y }, volume, "@ Press A -> new task");
+				break;
+			}
 		}
 		else {
-			group_management_paint_dynamic_list({ x, y }, volume, info[i]);
+			management_paint_dynamic_list({ x, y }, volume, info[i]);
 		}
 	}
 	return;
 }
 
-void group_management_paint_dynamic_list(pii start, pii volume, string text) {
+void management_paint_dynamic_list(pii start, pii volume, string text) {
 	gotoxy(start.first, start.second);
 	printf("┏");
 	for (int i = 2; i < volume.first - 2; i += 2) {
@@ -1382,7 +1554,6 @@ void textOperator(int len, char text[], pii pos, bool hidden) {
 		for (int i = 0; i < len; i++) {
 			printf("%c", (i < curLen ? (hidden ? '*' : text[i]) : '_'));
 		}
-		// input으로 병합
 		term = _getch();
 		if (term == 8 && curLen > 0) {
 			text[curLen--] = ' ';
