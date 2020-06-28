@@ -19,7 +19,7 @@ using namespace std;
 #define RIGHT 77
 #define UP 72
 #define DOWN 80
-#define ENTER 100
+#define ENTER 1000
 #define BACK_SPACE -10
 
 // 掘褻羹 塽 贗楚蝶 -------------------------------------------------------
@@ -87,6 +87,9 @@ private:
 	string name;
 	date deadline;
 public:
+	Task* next;
+	Task* prev;
+
 	Task(string _name, date _deadline) {
 		set_name(_name);
 		set_deadline(_deadline);
@@ -101,6 +104,10 @@ public:
 		return this->name;
 	}
 
+	string get_deadline_string(void) {
+		return to_string(this->deadline.month) + "/" + to_string(this->deadline.day);
+	}
+
 	bool set_deadline(date _deadline) {
 		this->deadline = _deadline;
 		return true;
@@ -109,65 +116,32 @@ public:
 
 class Group {
 private:
-	static int group_size;
-	static Group* curPos;
 	enum VisualMode {Vector, Queue, Stack, Heap};
 
+	int taskSize;
 	int index;
 	string name;
-	char color;
 	Task* rootTask;
 	VisualMode visualMode;
-
-	bool reduplication_test(string str) {
-		Group* iterPos = curPos;
-		do {
-			if (iterPos->name == str) {
-				return true;
-			}
-			iterPos = iterPos->next;
-		} while (iterPos != curPos);
-		return false;
-	}
-
 public:
 	Group* prev;
 	Group* next;
 
-	Group() {
-		set_color(7);
-		set_name("");
-		index = group_size;
-		group_size++;
-		if (group_size == 1) {
-			curPos = this;
-			this->next = this;
-			this->prev = this;
-		}
-		else {
-			this->next;
-		}
+	Group(int _index) {
+		set_name("            ");
+		index = _index;
+		taskSize = 0;
 		rootTask = NULL;
 	}
 
-	bool set_color(int index) {
-		this->color = index % 16;
-		return true;
-	}
-
-	int get_color() {
-		return this->color;
-	}
-
 	bool set_name(string _name) {
-		bool isReduplicated = reduplication_test(_name);
-		if (isReduplicated) {
-			// 檜葷 醞犒 籀葬
-			return false;
-		}
-		// 檜葷 瞳辨 籀葬
+		name.resize(_name.size());
 		this->name = _name;
 		return true;
+	}
+
+	string get_name() {
+		return name;
 	}
 
 	void set_visual_mode(int index) {
@@ -175,9 +149,30 @@ public:
 		return;
 	}
 
+	void set_index(int _index) {
+		index = _index;
+	}
+
 	void add(string data, date deadline) {
-		Task* newTask = (Task*)malloc(sizeof(Task));
-		*newTask = Task(data, deadline);
+		Task* newTask = new Task(data, deadline);
+		Task* iterPos = rootTask;
+		taskSize++;
+		while (iterPos->next != NULL) {
+			iterPos = iterPos->next;
+		}
+		iterPos->next = newTask;
+		return;
+	}
+
+	void get_task_text(vector<string>* taskTexts) {
+		taskTexts->clear();
+		taskTexts->reserve(taskSize);
+		Task* iterPos = rootTask;
+		while (iterPos != NULL) {
+			taskTexts->push_back(iterPos->get_deadline_string() + " : " + iterPos->get_name());
+			iterPos = iterPos->next;
+		}
+		return;
 	}
 };
 
@@ -186,6 +181,20 @@ private:
 	int size;
 	Group* head;
 	Group* tail;
+
+	bool reduplication_test(string str) {
+		if (size == 0) {
+			return true;
+		}
+		Group* iterPos = head;
+		do {
+			if (iterPos->get_name() == str) {
+				return false;
+			}
+			iterPos = iterPos->next;
+		} while (iterPos != NULL);
+		return true;
+	}
 public:
 
 	GroupProperty() {
@@ -194,12 +203,30 @@ public:
 		tail = NULL;
 	}
 
-	void add(string name, int visualizer, int color) {
-		Group* newGroup = (Group*)malloc(sizeof(Group));
-		*newGroup = Group();
-		newGroup->set_name(name);
+	int get_size() {
+		return size;
+	}
+
+	void get_group_text(vector<string> * groupTexts) {
+		groupTexts->clear();
+		groupTexts->reserve(size);
+		Group* iterPos = head;
+		while (iterPos != NULL) {
+			groupTexts->push_back(iterPos->get_name());
+			iterPos = iterPos->next;
+		}
+		return;
+	}
+
+	void add(string name, int visualizer) {
+		Group* newGroup = new Group(size);
+		if (reduplication_test(name)) {
+			newGroup->set_name(name);
+		}
+		else {
+			newGroup->set_name("group " + to_string(size + 1));
+		}
 		newGroup->set_visual_mode(visualizer);
-		newGroup->set_color(color);
 
 		if (tail != NULL) {
 			tail->next = newGroup;
@@ -246,14 +273,18 @@ public:
 		}
 		tmp->prev->next = tmp->next;
 		tmp->next->prev = tmp->prev;
-		free(tmp);
+
+		index--;
+		while (tmp != NULL) {
+			tmp->set_index(index++);
+			tmp = tmp->next;
+		}
+		delete(tmp);
 	}
 
 	void tour() {
 		Group* iterPos = head;
 		while (iterPos != NULL) {
-
-
 			iterPos = iterPos->next;
 		}
 		return;
@@ -281,6 +312,70 @@ public:
 
 	bool certify(string _id, string _pw) {
 		return (id == _id) && (pw == _pw);
+	}
+};
+
+class MonthTable {
+protected:
+	int day[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+	int nday;//⑷營 橾
+	int nmonth;//⑷營 錯
+	int nyear;//⑷營 喇紫
+	int total_day;//1喇睡攪 ⑷營 喇紫梱雖曖 識 橾 熱
+	int first_date;//羅廓簞 輿曖 奢寥 偃熱
+
+	bool is_leap_year(int year) { //彌喇檣雖 �挫�
+		if (year % 4 == 0 && year % 100 != 0 || year % 400 == 0) {
+			day[1] = 29;
+			return true;
+		}
+		day[1] = 28;
+		return false;
+	}
+public:
+	time_t curTime = time(NULL);
+	struct tm* pLocal = localtime(&curTime);
+	int date[5][7];//殖溘 寡翮
+	MonthTable()
+	{
+		nday = pLocal->tm_mday;
+		nmonth = pLocal->tm_mon + 1;
+		nyear = pLocal->tm_year + 1900;
+		total_day = 0;
+		first_date = 0;
+	}
+	void calc_day()//total_day, first_date 啗骯
+	{
+		total_day = (nyear - 1) * 365 + (nyear - 1) / 4 - (nyear - 1) / 100 + (nyear - 1) / 400;
+		for (int i = 0; i < nmonth - 1; i++) {
+			if (i == 1) is_leap_year(nyear);
+			total_day += day[i];
+		}
+		first_date = total_day % 7;
+	}
+	void make_Cal()
+	{
+		int count = 0;
+		int c = 0;
+
+		calc_day();
+
+		for (int i = 0; i <= first_date; i++)
+		{
+			date[c][count] = 0;
+			count++;
+		}
+		for (int i = 1; i <= day[nmonth - 1]; i++)
+		{
+			if (count >= 7)
+			{
+				cout << endl;
+				count = 0;
+				c++;
+			}
+			date[c][count] = i;
+			count++;
+		}
 	}
 };
 
@@ -682,24 +777,28 @@ void textOperator(int len, char text[], pii pos, bool hidden);
 // Scene Func
 int log_in(void);
 int home(void);
-int calender(void);
+int calendar(void);
 int group_task(void);
 int setting(void);
 int merge_user(void);
 int FTM(void);
 int group_management(void);
-int current_group_task(void);
-int set_group_property(void);
+void current_group_task(int idenfier);
+void set_group_property(int idenfier);
+
 void try_initialize();
 
-int(*scene[10])(void) = { log_in, home, calender, group_task, group_management, FTM, merge_user, setting, current_group_task, set_group_property };
+void group_management_paint(pii start, pii volume, pii gap, vector<string> info);
+void group_management_paint_dynamic_list(pii start, pii volume, string text);
+
+int(*scene[8])(void) = { log_in, home, calendar, group_task, group_management, FTM, merge_user, setting};
 
 // Design Func
 void design_Default(void);
 
 void design_log_in(void);
 void design_home(void);
-void design_calender(void);
+void design_calendar(void);
 void design_group_task(void);
 void design_setting(void);
 void additional_design_setting(void);
@@ -787,7 +886,6 @@ int log_in(void) {
 	return 1;
 }
 
-
 int home(void) {
 	design_home();
 	isEnd = false;
@@ -841,11 +939,11 @@ void timePrint(void) {
 	}
 }
 
-int calender(void) {
+int calendar(void) {
 	int term;
 	do {
 		gotoxy(0, 0);
-		design_calender();
+		design_calendar();
 		term = _getch();
 	} while (term != 8);
 	system("cls");
@@ -1028,29 +1126,158 @@ int FTM(void) {
 }
 
 int group_management(void) {
-	int a;
 	design_group_manager();
+	vector<string> groupTexts;
+	int limit;
+	int bufferIndex = -1;
+	int direction = 0;
+	int selected = -1;
+	curSelect = { 0,0 };
+	do {
+		user.myGroups.get_group_text(&groupTexts);
+		limit = groupTexts.size();
+		group_management_paint({ 4, 2 }, { 74, 3 }, { 42, 3 }, groupTexts);
+		cursor_Draw(curSelect.first + (curSelect.second * 9), 0, 2, 1);
+		direction = input(10, 2, 0);
+		cursor_Draw(curSelect.first + (curSelect.second * 9), (curSelect.first + (curSelect.second * 9) + 1) < limit ? '@' : (curSelect.first + (curSelect.second * 9) + 49), 2, 0);
+		Sleep(5);
 
-	cin.ignore();
-	scanf("%d", &a);
+	switch (direction) {
+		case 'D': case 'd':
+			selected = 0;
+			bufferIndex = curSelect.first + curSelect.second * 9;
+			break;
+		case 'T': case 't':
+			if (curSelect.first + (curSelect.second * 9) == limit) {
+				if (limit < 18) {
+					char newGroupName[23] = "                      ";
+					textOperator(23, newGroupName, { 10 + (limit / 9) * 42  , 3 + (limit % 9) * 3 }, false);
+					user.myGroups.add(newGroupName, 0);
+				}
+			}
+			else {
+				cin.ignore();
+				system("cls");
+				current_group_task(curSelect.first + curSelect.second * 9);
+				gotoxy(0, 0);
+				design_group_manager();
+			}
+			break;
+		case 'M': case 'm':
+			selected = 2;
+			bufferIndex = curSelect.first + (curSelect.second * 9);
+			// 斜瑜 煽м
+			break;
+		case 'P': case 'p':
+			if (curSelect.first + (curSelect.second * 9) != limit) {
+				cin.ignore();
+				system("cls");
+				set_group_property(curSelect.first + curSelect.second * 9);
+				gotoxy(0, 0);
+				design_group_manager();
+			}
+			break;
+		case 'B': case 'b':
+			curSelect = { 0, 0 };
+			system("cls");
+			return 1;
+		case 1: case -1:
+			if (curSelect.first + direction + curSelect.second * 9 <= limit) {
+				curSelect.first += direction;
+				if (curSelect.first == 9 && direction == 1) {
+					curSelect.second = 1;
+					curSelect.first = 0;
+				}
+				if (curSelect.first == -1 && curSelect.second == 1 && direction == -1) {
+					curSelect.second = 0;
+					curSelect.first = 8;
+				}
+			}
+			break;
+		case 9: case -9:
+			if (curSelect.first + ( (direction /9) + curSelect.second ) * 9 <= limit) {
+				curSelect.second += direction / 9;
+			}
+			break;
+		case ENTER:
+			if (selected != -1 && bufferIndex != curSelect.first + curSelect.second * 8) {
+				// 嬪纂 滲唳檜釭 煽м 籀葬
+			}
+			break;
+		}
+	} while (true);
 	system("cls");
 	return 1;
 }
 
-int current_group_task(void) {
-	int a;
+void current_group_task(int identifier) {
+	gotoxy(0, 0);
 	design_current_group_task();
-	scanf("%d", &a);
+
+	Group* group = user.myGroups.get_group_by_index(identifier);
+	vector<string> taskTexts;
+	int limit;
+	int direction = 0;
+	curSelect = { 0,0 };
+	do {
+		group->get_task_text(&taskTexts);
+		limit = taskTexts.size();
+		group_management_paint({ 4, 2 }, { 74, 3 }, { 42, 3 }, taskTexts);
+		cursor_Draw(curSelect.first + (curSelect.second * 9), 0, 2, 1);
+		direction = input(10, 2, 0);
+		cursor_Draw(curSelect.first + (curSelect.second * 9), (curSelect.first + (curSelect.second * 9) + 1) < limit ? '@' : (curSelect.first + (curSelect.second * 9) + 49), 2, 0);
+		Sleep(5);
+
+		switch (direction) {
+		case 'A': case 'a': // add
+			break;
+		case 'M': case 'm': // modify
+			if (limit < 18) {
+				char newTaskName[23] = "                      ";
+				textOperator(23, newTaskName, { 10 + (limit / 9) * 42  , 3 + (limit % 9) * 3 }, false);
+				user.myGroups.add(newTaskName, 0);
+			}
+			break;
+		case 'D': case 'd': //delete
+			break;
+		case 'I': case 'i':
+			user.myGroups.remove(identifier);
+		case 'B': case 'b':
+			curSelect = { 0, 0 };
+			system("cls");
+			return;
+		case 1: case -1:
+			if (curSelect.first + direction + curSelect.second * 9 <= limit) {
+				curSelect.first += direction;
+				if (curSelect.first == 9 && direction == 1) {
+					curSelect.second = 1;
+					curSelect.first = 0;
+				}
+				if (curSelect.first == -1 && curSelect.second == 1 && direction == -1) {
+					curSelect.second = 0;
+					curSelect.first = 8;
+				}
+			}
+			break;
+		case 9: case -9:
+			if (curSelect.first + ((direction / 9) + curSelect.second) * 9 <= limit) {
+				curSelect.second += direction / 9;
+			}
+			break;
+		}
+	} while (true);
+
 	system("cls");
-	return 1;
+	return;
 }
 
-int set_group_property(void) {
-	int a;
+void set_group_property(int idenfier) {
+	gotoxy(0, 0);
 	design_set_group_property();
-	scanf("%d", &a);
+
+
 	system("cls");
-	return 1;
+	return;
 }
 
 void cursor_Draw(int x, int y, int sceneIndex, bool mode) {
@@ -1060,7 +1287,7 @@ void cursor_Draw(int x, int y, int sceneIndex, bool mode) {
 	int colStart;
 	int colGap;
 	switch (sceneIndex) {
-	case 0:
+	case 0: // Menu
 		rowStart = 3;
 		rowGap = 5;
 		colStart = 87;
@@ -1076,7 +1303,7 @@ void cursor_Draw(int x, int y, int sceneIndex, bool mode) {
 		gotoxy(col + colGap, row + rowGap);
 		if (mode) printf("戎"); else printf(" ");
 		break;
-	case 1:
+	case 1: // Setting
 		rowStart = 6;
 		colStart = 23;
 		colGap = 4;
@@ -1087,7 +1314,64 @@ void cursor_Draw(int x, int y, int sceneIndex, bool mode) {
 		gotoxy(col + colGap, row);
 		if (mode) printf("９"); else printf(" ");
 		break;
+	case 2: // List
+		rowStart = 3;
+		colStart = 7;
+		row = rowStart + (x % 9) * 3;
+		col = colStart + (x / 9) * 42;
+		gotoxy(col, row);
+		if (mode) printf("Ⅱ"); else printf("  ");
+		break;
 	}
+
+}
+
+void group_management_paint(pii start, pii volume, pii gap, vector<string> info) {
+	int size = info.size();
+	int x, y;
+	for (int i = 0; i <= size; i++) {
+		x = start.first + (gap.first * (i / 9));
+		y = start.second + (gap.second * (i % 9));
+		if (i == size) {
+			group_management_paint_dynamic_list({ x, y }, volume, "@ Press T -> new group");
+		}
+		else {
+			group_management_paint_dynamic_list({ x, y }, volume, info[i]);
+		}
+	}
+	return;
+}
+
+void group_management_paint_dynamic_list(pii start, pii volume, string text) {
+	gotoxy(start.first, start.second);
+	printf("旨");
+	for (int i = 2; i < volume.first - 2; i += 2) {
+		printf("收");
+	}
+	printf("旬");
+
+	for (int i = 1; i < volume.second - 1; i++) {
+		gotoxy(start.first, start.second + i);
+		printf("早");
+		for (int j = 2; j < volume.first - 2; j += 2) {
+			printf(" ");
+		}
+		printf("早");
+	}
+
+	gotoxy(start.first, start.second + volume.second - 1);
+	printf("曲");
+	for (int i = 2; i < volume.first - 2; i += 2) {
+		printf("收");
+	}
+	printf("旭");
+
+	int length = text.size();
+	gotoxy(start.first + 7, start.second + 1);
+	for (int i = 0; i < length; i++) {
+		printf("%c", text[i]);
+	}
+	return;
 }
 
 void textOperator(int len, char text[], pii pos, bool hidden) {
@@ -1098,12 +1382,23 @@ void textOperator(int len, char text[], pii pos, bool hidden) {
 		for (int i = 0; i < len; i++) {
 			printf("%c", (i < curLen ? (hidden ? '*' : text[i]) : '_'));
 		}
+		// input戲煎 煽м
 		term = _getch();
 		if (term == 8 && curLen > 0) {
 			text[curLen--] = ' ';
 		}
 		else if (curLen != len && 32 <= term && term <= 126) {
 			text[curLen++] = term;
+		}
+		else if (term == 0xE0 || term == 0) {
+			term = _getch();
+			if (term == UP) {
+				return;
+			}
+			else if (term == DOWN)
+			{
+				return;
+			}
 		}
 	}
 	return;
@@ -1281,13 +1576,8 @@ void design_setting(void) {
 	printf("早曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭早\n");
 	printf("曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭");
 }
-// 13 6 / 13 11 / 13 16 / 13 21 -> 寡唳 鏽楝 臢蝶お 鏽楝 撲薑 蟾晦�� 等檜攪 蟾晦��
-// 22 7 -> 24 7 ... 2噶 棺橫陴 謝ル (寡唳鏽楝 1)
-// 5蘊噶 頂溥骨棲棻..
-// ID PW 睡碟擎 23 / 11 , 25 / 11
-// 仃朝 賦喱 謝ル 嬪纂 ル衛и剪歜 雖辦堅 ж撬
 
-void design_calender(void) {
+void design_calendar(void) {
 	printf("旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬\n");
 	printf("早   Calender                                                                                                          早\n");
 	printf("早                                                                                                                     早\n");
@@ -1321,62 +1611,72 @@ void design_calender(void) {
 void design_group_task(void) {
 	printf("旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬\n");
 	printf("早   Group Task                                                                                                        早\n");
+	printf("早 收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收 早\n");
 	printf("早                                                                                                                     早\n");
 	printf("早                                                                                                                     早\n");
 	printf("早                                                                                                                     早\n");
+	printf("早            斜瑜 檜葷                                                                                                早\n");
+	printf("早      收收收收收收收收收收收收收收收收收收收收收                                                                                          早\n");
 	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
+	printf("早    旨收收收收收收收收收收收收收收收收收收收收收收收旬                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早	                                                                                      早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                               		                  早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    早                       早                                                                                        早\n");
+	printf("早    曲收收收收收收收收收收收收收收收收收收收收收收收旭                                                                                        早\n");
+	printf("早                                                  ８ (1 / 4) Ⅰ                                                        早\n");
 	printf("曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭");
 }
+// 14, 6 斜瑜檜葷
+// 52, 29 / 62, 29 �香嚂�
+// 26 離檜陴 斜瑜檜葷
+
 
 void design_merge_user(void) {
 	printf("旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬\n");
-	printf("早   Merge User                                                                                                        早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
+	printf("早旨收收收收收收收收收收收收收收收收收收收收收收收收--收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬早\n");
+	printf("早早                                         早                                         早早             MENU             早早\n");
+	printf("早早                   ID                    早                   PW                    早早                              早早\n");
+	printf("早早                                         早                                         早早 旨收收收收收收收收收收收收收收收收收收收收收收收收收收旬 早早\n");
+	printf("早早                                         早                                         早早 早        ( J ) 煽м        早 早早\n");
+	printf("早早  旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬  早  旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬  早早 早                          早 早早\n");
+	printf("早早  早 仃                                早  早  早 仃                                早  早早 曲收收收收收收收收收收收收收收收收收收收收收收收收收收旭 早早\n");
+	printf("早早  早                                   早  早  早                                   早  早早                              早早\n");
+	printf("早早  曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭  早  曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭  早早 旨收收收收收收收收收收收收收收收收收收收收收收收收收收旬 早早\n");
+	printf("早早                                         早                                         早早 早     ( B ) 菴煎 陛晦      早 早早\n");
+	printf("早早                                         早                                         早早 早                          早 早早\n");
+	printf("早早                                         早                                         早早 曲收收收收收收收收收收收收收收收收收收收收收收收收收收旭 早早\n");
+	printf("早早                                         早                                         早早                              早早\n");
+	printf("早早                                         早                                         早早                              早早\n");
+	printf("早早收收收收收收收收收收收收收收收收收收收收收收收收--收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭早\n");
 	printf("曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭");
 }
 
@@ -1421,12 +1721,12 @@ void design_fast_task_manager(void) {
 void design_group_manager(void) {
 	printf("旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬\n");
 	printf("早旨收收收收收收收收收收收收收收收收收收收收收收收收--收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬早\n");
-	printf("早早  旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬  早  旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬  早早             MENU             早早\n");
-	printf("早早  早  1. 仃                         仃 早  早  早  9. 仃                         仃 早  早早                              早早\n");
-	printf("早早  曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭  早  曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭  早早 旨收收收收收收收收收收收收收收收收收收收收收收收收收收旬 早早\n");
-	printf("早早  旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬  早                                         早早 早 ( D ) ⑷營斜瑜 嬪纂滲唳  早 早早\n");
-	printf("早早  早  2. 仃                         仃 早  早                                         早早 早                          早 早早\n");
-	printf("早早  曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭  早                                         早早 曲收收收收收收收收收收收收收收收收收收收收收收收收收收旭 早早\n");
+	printf("早早                                         早                                         早早             MENU             早早\n");
+	printf("早早                                         早                                         早早                              早早\n");
+	printf("早早                                         早                                         早早 旨收收收收收收收收收收收收收收收收收收收收收收收收收收旬 早早\n");
+	printf("早早                                         早                                         早早 早 ( D ) ⑷營斜瑜 嬪纂滲唳  早 早早\n");
+	printf("早早                                         早                                         早早 早                          早 早早\n");
+	printf("早早                                         早                                         早早 曲收收收收收收收收收收收收收收收收收收收收收收收收收收旭 早早\n");
 	printf("早早                                         早                                         早早                              早早\n");
 	printf("早早                                         早                                         早早 旨收收收收收收收收收收收收收收收收收收收收收收收收收收旬 早早\n");
 	printf("早早                                         早                                         早早 早  ( T ) ⑷營斜瑜 鷓蝶觼   早 早早\n");
@@ -1452,67 +1752,73 @@ void design_group_manager(void) {
 	printf("曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭");
 }
 
-// 1 -> 11, 3, 37, 3
-// 2 -> 11, 7, 37, 7
-// 9 -> 51, 3, 77, 3
-
 void design_current_group_task(void) {
 	printf("旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬\n");
-	printf("早   Current Group Task                                                                                                早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
+	printf("早旨收收收收收收收收收收收收收收收收收收收收收收收收--收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬早\n");
+	printf("早早                                         早                                         早早             MENU             早早\n");
+	printf("早早                                         早                                         早早                              早早\n");
+	printf("早早                                         早                                         早早 旨收收收收收收收收收收收收收收收收收收收收收收收收收收旬 早早\n");
+	printf("早早                                         早                                         早早 早     ( A ) 鷓蝶觼 蹺陛    早 早早\n");
+	printf("早早                                         早                                         早早 早                          早 早早\n");
+	printf("早早                                         早                                         早早 曲收收收收收收收收收收收收收收收收收收收收收收收收收收旭 早早\n");
+	printf("早早                                         早                                         早早                              早早\n");
+	printf("早早                                         早                                         早早 旨收收收收收收收收收收收收收收收收收收收收收收收收收收旬 早早\n");
+	printf("早早                                         早                                         早早 早     ( M ) 鷓蝶觼 熱薑    早 早早\n");
+	printf("早早                                         早                                         早早 早                          早 早早\n");
+	printf("早早                                         早                                         早早 曲收收收收收收收收收收收收收收收收收收收收收收收收收收旭 早早\n");
+	printf("早早                                         早                                         早早                              早早\n");
+	printf("早早                                         早                                         早早 旨收收收收收收收收收收收收收收收收收收收收收收收收收收旬 早早\n");
+	printf("早早                                         早                                         早早 早     ( D ) 鷓蝶觼 餉薯    早 早早\n");
+	printf("早早                                         早                                         早早 早                          早 早早\n");
+	printf("早早                                         早                                         早早 曲收收收收收收收收收收收收收收收收收收收收收收收收收收旭 早早\n");
+	printf("早早                                         早                                         早早                              早早\n");
+	printf("早早                                         早                                         早早 旨收收收收收收收收收收收收收收收收收收收收收收收收收收旬 早早\n");
+	printf("早早                                         早                                         早早 早       ( I ) 蟾晦��       早 早早\n");
+	printf("早早                                         早                                         早早 早                          早 早早\n");
+	printf("早早                                         早                                         早早 曲收收收收收收收收收收收收收收收收收收收收收收收收收收旭 早早\n");
+	printf("早早                                         早                                         早早                              早早\n");
+	printf("早早                                         早                                         早早 旨收收收收收收收收收收收收收收收收收收收收收收收收收收旬 早早\n");
+	printf("早早                                         早                                         早早 早     ( B ) 菴煎 陛晦      早 早早\n");
+	printf("早早                                         早                                         早早 早                          早 早早\n");
+	printf("早早                                         早                                         早早 曲收收收收收收收收收收收收收收收收收收收收收收收收收收旭 早早\n");
+	printf("早早                                         早                                         早早                              早早\n");
+	printf("早曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭早\n");
 	printf("曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭");
 }
+// 斜瑜婦葬嫌 謝ル 翕橾
+
 void design_set_group_property(void) {
-	printf("旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬\n");
-	printf("早   Set Group Property                                                                                                早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
-	printf("早                                                                                                                     早\n");
+	printf("早旨收收收收收收收收收收收收收收收收收收收收收收收收--收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬旨收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旬早\n");
+	printf("早早  斜瑜貲                                                                           早早             MENU             早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早 旨收收收收收收收收收收收收收收收收收收收收收收收收收收旬 早早\n");
+	printf("早早                                                                                   早早 早    ( V ) 綠輿橡塭檜盪    早 早早\n");
+	printf("早早  旨收收收收收收收收收收收收收收收收收收收收收收旬    旨收收收收收收收收收收收收收收收收收收收收收收旬    旨收收收收收收收收收收收收收收收收收收收收收旬  早早 早                          早 早早\n");
+	printf("早早  早        蝶 鷗         早    早          聽          早    早          ��         早  早早 曲收收收收收收收收收收收收收收收收收收收收收收收收收收旭 早早\n");
+	printf("早早  曲收收收收收收收收收收收收收收收收收收收收收收旭    曲收收收收收收收收收收收收收收收收收收收收收收旭    曲收收收收收收收收收收收收收收收收收收收收收旭  早早                              早早\n");
+	printf("早早                                                                                   早早 旨收收收收收收收收收收收收收收收收收收收收收收收收收收旬 早早\n");
+	printf("早早                                                                                   早早 早      ( B ) 菴煎 陛晦     早 早早\n");
+	printf("早早                                                                                   早早 早                          早 早早\n");
+	printf("早早                                                                                   早早 曲收收收收收收收收收收收收收收收收收收收收收收收收收收旭 早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早早                                                                                   早早                              早早\n");
+	printf("早曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭早\n");
 	printf("曲收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收收旭");
 }
+// 蝶鷗 陛遴等 嬪纂 -> 15, 7
+// 聽 嬪纂 -> 42, 7
+// �� 嬪纂 -> 69, 7
