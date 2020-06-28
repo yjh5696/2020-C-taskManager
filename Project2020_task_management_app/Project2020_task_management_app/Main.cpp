@@ -179,7 +179,7 @@ public:
 	}
 
 	int get_index() {
-
+		return index;
 	}
 
 	void add(string data, date deadline) {
@@ -340,16 +340,38 @@ public:
 		if (a->next != NULL) {
 			a->next->prev = b;
 		}
+		else {
+			tail = b;
+		}
+
 		if (b->next != NULL) {
 			b->next->prev = a;
+		}
+		else {
+			tail = a;
 		}
 
 		if (a->prev != NULL) {
 			a->prev->next = b;
 		}
+		else {
+			head = b;
+		}
+
 		if (b->prev != NULL) {
 			b->prev->next = a;
 		}
+		else {
+			head = a;
+		}
+
+		Group* tmp = a->prev;
+		a->prev = b->prev;
+		b->prev = tmp;
+
+		tmp = a->next;
+		a->next = b->next;
+		b->next = tmp;
 
 		return;
 	}
@@ -1436,13 +1458,31 @@ void current_group_task(int identifier) {
 	return;
 }
 
-void set_group_property(int idenfier) {
+void set_group_property(int identifier) {
 	gotoxy(0, 0);
 	design_set_group_property();
+	Group* group = user.myGroups.get_group_by_index(identifier);
+	gotoxy(4, 2);
+	printf("%s", (group->get_name()).c_str());
+	int direction = 0;
+	curSelect = { 0,0 };
+	do {
+		cursor_Draw(curSelect.second, 0, 3, 1);
+		direction = input(1, 3, 0);
+		cursor_Draw(curSelect.second, 0, 3, 0);
+		Sleep(5);
 
-
-	system("cls");
-	return;
+		switch (direction) {
+		case 1: case -1:
+			curSelect.second += direction;
+			group->set_visual_mode(curSelect.second);
+			break;
+		case 'B': case 'b': case ENTER:
+			curSelect = { 0,0 };
+			system("cls");
+			return;
+		}
+	} while (true);
 }
 
 void cursor_Draw(int x, int y, int sceneIndex, bool mode) {
@@ -1487,6 +1527,21 @@ void cursor_Draw(int x, int y, int sceneIndex, bool mode) {
 		gotoxy(col, row);
 		if (mode) printf("▶"); else printf("  ");
 		break;
+	case 3: // property
+		rowStart = 5;
+		colStart = 3;
+		rowGap = 4;
+		colGap = 25;
+		row = rowStart;
+		col = colStart + x * 28;
+		gotoxy(col, row);
+		if (mode) printf("┏"); else printf(" ");
+		gotoxy(col, row + rowGap);
+		if (mode) printf("└"); else printf(" ");
+		gotoxy(col + colGap, row);
+		if (mode) printf("┐"); else printf(" ");
+		gotoxy(col + colGap, row + rowGap);
+		if (mode) printf("┘"); else printf(" ");
 	}
 
 }
@@ -1959,8 +2014,9 @@ void design_current_group_task(void) {
 // 그룹관리랑 좌표 동일
 
 void design_set_group_property(void) {
+	printf("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n");
 	printf("┃┏━━━━━━━━━━━━━━━━━━━━━━━━--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┃\n");
-	printf("┃┃  그룹명                                                                           ┃┃             MENU             ┃┃\n");
+	printf("┃┃                                                                                   ┃┃             MENU             ┃┃\n");
 	printf("┃┃                                                                                   ┃┃                              ┃┃\n");
 	printf("┃┃                                                                                   ┃┃ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┃┃\n");
 	printf("┃┃                                                                                   ┃┃ ┃    ( V ) 비주얼라이저    ┃ ┃┃\n");
