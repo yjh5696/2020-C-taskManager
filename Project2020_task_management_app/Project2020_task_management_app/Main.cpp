@@ -1922,7 +1922,7 @@ void design_calendar(void) {
 	printf("┃                    ┃                                                                                          ┃\n");
 	printf("┃━━━━━━━━━┓━━━━━━━━━━┛                                                                                          ┃\n");
 	printf("┃         ┃                                                                                                     ┃\n");
-	printf("┃━━━━━━━━━┛                                                                                                      ┃\n");
+	printf("┃━━━━━━━━━┛                                                                                                     ┃\n");
 	printf("┃                                                                                                               ┃\n");
 	printf("┃                                                                                                               ┃\n");
 	printf("┃                                                                                                               ┃\n");
