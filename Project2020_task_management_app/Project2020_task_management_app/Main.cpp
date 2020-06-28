@@ -159,6 +159,14 @@ public:
 		rootTask = NULL;
 	}
 
+	void set_taskSize(int _taskSize) {
+		taskSize = _taskSize;
+	}
+
+	int get_taskSize() {
+		return taskSize;
+	}
+
 	bool set_name(string _name) {
 		name.resize(_name.size());
 		this->name = _name;
@@ -169,9 +177,21 @@ public:
 		return name;
 	}
 
+	Task* get_rootTask() {
+		return rootTask;
+	}
+
+	void set_rootTask(Task* root) {
+		rootTask = root;
+	}
+
 	void set_visual_mode(int index) {
 		this->visualMode = (VisualMode)index;
 		return;
+	}
+
+	int get_visual_mode() {
+		return (int)visualMode;
 	}
 
 	void set_index(int _index) {
@@ -336,42 +356,28 @@ public:
 		}
 		Group* a = get_group_by_index(departure);
 		Group* b = get_group_by_index(destination);
+		Group* tmp1;
+		Group* tmp2;
 
-		if (a->next != NULL) {
-			a->next->prev = b;
-		}
-		else {
-			tail = b;
-		}
+		int tmpInt = a->get_index();
+		a->set_index(b->get_index());
+		b->set_index(tmpInt);
 
-		if (b->next != NULL) {
-			b->next->prev = a;
-		}
-		else {
-			tail = a;
-		}
+		tmpInt = a->get_visual_mode();
+		a->set_visual_mode(b->get_visual_mode());
+		b->set_visual_mode(tmpInt);
 
-		if (a->prev != NULL) {
-			a->prev->next = b;
-		}
-		else {
-			head = b;
-		}
+		tmpInt = a->get_taskSize();
+		a->set_taskSize(b->get_taskSize());
+		b->set_taskSize(tmpInt);
 
-		if (b->prev != NULL) {
-			b->prev->next = a;
-		}
-		else {
-			head = a;
-		}
+		Task* tmpTask = a->get_rootTask();
+		a->set_rootTask(b->get_rootTask());
+		b->set_rootTask(tmpTask);
 
-		Group* tmp = a->prev;
-		a->prev = b->prev;
-		b->prev = tmp;
-
-		tmp = a->next;
-		a->next = b->next;
-		b->next = tmp;
+		string tmpStr = a->get_name();
+		a->set_name(b->get_name());
+		b->set_name(tmpStr);
 
 		return;
 	}
@@ -1214,7 +1220,9 @@ int merge_user(void) {
 
 int FTM(void) {
 	design_fast_task_manager();
-
+	vector<Group*> groups = vector<Group*>();
+	vector<Task*> tasks = vector<Task*>();
+	char keyword[20] = "                   ";
 	int direction = 0;
 	int selected = -1;
 	do {
@@ -1255,6 +1263,19 @@ int FTM(void) {
 			if (-1 < selected && selected < 2) {
 				curSelect.second += direction / 2;
 			}
+			break;
+		}
+
+		textOperator(20, keyword, { 14, 7 }, false);
+
+
+		switch (selected) {
+		case 0: // 모든 태스크 표시
+			
+			break;
+		case 1: // 맞는 태스크 검색
+			break;
+		case 2: // 모든 태스크 표시
 			break;
 		}
 	} while (true);
@@ -1542,6 +1563,7 @@ void cursor_Draw(int x, int y, int sceneIndex, bool mode) {
 		if (mode) printf("┐"); else printf(" ");
 		gotoxy(col + colGap, row + rowGap);
 		if (mode) printf("┘"); else printf(" ");
+		break;
 	}
 
 }

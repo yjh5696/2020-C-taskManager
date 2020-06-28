@@ -1,4 +1,4 @@
-﻿pull : 
+﻿git pull : 
 깃허브에서 변경한걸로 가져오는거: git pull origin master
 
 push :
