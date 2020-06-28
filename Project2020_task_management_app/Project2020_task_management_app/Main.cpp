@@ -915,6 +915,7 @@ int FTM(void);
 int group_management(void);
 void current_group_task(int idenfier);
 void set_group_property(int idenfier);
+void FTM_paint(string texts[3]);
 
 void try_initialize();
 
@@ -1221,32 +1222,52 @@ int merge_user(void) {
 int FTM(void) {
 	design_fast_task_manager();
 	vector<Group*> groups = vector<Group*>();
+	for (int i = 0; i < user.myGroups.get_size(); i++) {
+		groups.push_back(user.myGroups.get_group_by_index(i));
+	}
+ 
 	vector<Task*> tasks = vector<Task*>();
 	char keyword[20] = "                   ";
 	int direction = 0;
-	int selected = -1;
+	int selected = 0;
+	int limit = 0;
+	int groups_size = groups.size();
+	
 	do {
-
-		if (-1 < selected && selected < 3) {
+		// 태스크 불러오기
+		tasks.clear();
+		for (int i = 0; i < groups_size; i++) {
+			int tasks_size = groups[i]->get_taskSize();
+			for (int j = 0; j < tasks_size; j++) {
+				Task* iterPos = groups[i]->get_rootTask();
+				if (iterPos == NULL) {
+					break;
+				}
+				tasks.push_back(iterPos);
+				iterPos = iterPos->next;
+			}
+		}
+		// 커서 출력 -> 검색하는 부분에만 
+		if (selected) {
 			cursor_Draw(curSelect.first + (curSelect.second * 3), 0, 2, 1);
 		}
 		direction = input(3, 8, 0);
-		if (-1 < selected && selected < 3) {
+		if (selected) {
 			cursor_Draw(curSelect.first + (curSelect.second * 3), 0, 2, 0);
 		}
 		Sleep(5);
 		switch (direction) {
 		case 'A': case 'a':
 			curSelect = { 0, 0 };
-			selected = 0;
+			selected = 1;
 			break;
 		case 'D': case 'd':
 			curSelect = { 0, 0 };
-			selected = 1;
+			selected = 2;
 			break;
 		case 'M': case 'm':
 			curSelect = { 0, 0 };
-			selected = 2;
+			selected = 3;
 			break;
 		case 'B': case 'b':
 			curSelect = { 0, 0 };
@@ -1254,31 +1275,59 @@ int FTM(void) {
 			return 1;
 		// 상하 이동
 		case 1: case -1:
-			if (-1 < selected && selected < 2) {
+			if (selected) {
 				curSelect.first += direction;
 			}
 			break;
 		// 페이지 이동
 		case 2: case -2:
-			if (-1 < selected && selected < 2) {
-				curSelect.second += direction / 2;
+			if (selected) {
+				curSelect.second += direction / 3;
 			}
 			break;
+		case ENTER:
+			switch (selected) {
+			case 1:
+				
+				break;
+			case 2:
+				break;
+			case 3:
+				break;
+			}
+			selected = 0;
+			break;
 		}
 
-		textOperator(20, keyword, { 14, 7 }, false);
+		// 날짜, 태스크 입력
+		char newDateString[2][3] = { "00", "00" };
+		char keyword[23] = "                      ";
+		
+		gotoxy(14, 7);
+		printf("                           ");
+		textOperator(2, newDateString[0], { 14, 7 }, false);
+		textOperator(2, newDateString[1], { 17, 7 }, false);
+		date newDeadline = { atoi(newDateString[0]), atoi(newDateString[1]) };
+		textOperator(23, keyword, { 20, 7 }, false);
+		
+		
+		if (selected == 1) {
+			string paramArr[3] = { groups[curSelect.second * 3]->get_name(), groups[curSelect.second * 3 + 1]->get_name(),groups[curSelect.second * 3 + 2]->get_name() };
+			FTM_paint(paramArr);
 
-
-		switch (selected) {
-		case 0: // 모든 태스크 표시
-			
-			break;
-		case 1: // 맞는 태스크 검색
-			break;
-		case 2: // 모든 태스크 표시
-			break;
+			groups[curSelect.first + curSelect.second * 3]->add(keyword, newDeadline);
+			groups[curSelect.first + curSelect.second * 3]->sort_task();
 		}
 	} while (true);
+}
+
+void FTM_paint(string texts[3]) {
+	int j = 0;
+	for (int i = 5; i < 3; i+= 4) {
+		gotoxy(i, 57);
+		printf("%s", texts[j++].c_str());
+	}
+	return;
 }
 
 int group_management(void) {
@@ -1290,7 +1339,6 @@ int group_management(void) {
 	int selected = -1;
 	curSelect = { 0,0 };
 	do {
-		// 그룹 모두 삭제할 때 호출되는 부분 -> 에러의 원인
 		user.myGroups.get_group_text(&groupTexts);
 		limit = groupTexts.size();
 		management_paint({ 4, 2 }, { 74, 3 }, { 42, 3 }, 0, groupTexts);
@@ -1313,7 +1361,6 @@ int group_management(void) {
 				}
 			}
 			else {
-				cin.ignore();
 				system("cls");
 				current_group_task(curSelect.first + curSelect.second * 9);
 				gotoxy(0, 0);
